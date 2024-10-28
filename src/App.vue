@@ -5,14 +5,18 @@
                 <FullCalendar ref="calendarRef2" :options="calendarOptionsLeft"/>
             </div>
             <div class="flex justify-between mt-5">
-                <b class="text-[#0F4C81] text-[20px]">Upcoming Events</b>
+                <div>
+                    <b v-if="selectedEvents.length > 0" class="text-[#0F4C81] text-[20px]">Event Takes Place</b>
+                    <b v-else class="text-[#0F4C81] text-[20px]">Upcoming Events</b>
+                </div>
                 <button class="bg-[#0F4C81] rounded-xl text-white px-3 py-1 text-[12px]">View All</button>
             </div>
             <div>
-                <b class="text-[#A9A9A9]">Today, {{ new Date().getDate() }} {{ monthNames[new Date().getMonth()] }}</b>
+                <b v-if="selectedEvents.length > 0" class="text-[#A9A9A9]">{{ moment(getClickedDate).format('DD/MM/YYYY') }}</b>
+                <b v-else class="text-[#A9A9A9]">Today, {{ new Date().getDate() }} {{ monthNames[new Date().getMonth()] }}</b>
             </div>
             <div class="block-events mt-3">
-                <div v-for="event of events" :class="checkBorderLeftAndBg(event)"
+                <div v-if="selectedEvents.length > 0" v-for="event in selectedEvents" :key="event.date" :class="checkBorderLeftAndBg(event)"
                      class="flex gap-2 justify-between mb-2 rounded-md p-2 pr-4 border-l-8 border-[#0F4C81]">
                     <div class="col-8">
                         <p :class="checkColorTextTitle(event)" class="text-[14px] text-[#0F4C81] font-bold">
@@ -31,6 +35,30 @@
                         <div :class="event.status == 'important' ? 'bg-[#5684AE]' : 'bg-[#FFFACD]'"
                              class="px-2 py-1 rounded-full ">
                             <i class="fa-solid fa-video"></i>
+                        </div>
+                    </div>
+                </div>
+                <div v-else>
+                    <div v-for="event in events" :class="checkBorderLeftAndBg(event)"
+                         class="flex gap-2 justify-between mb-2 rounded-md p-2 pr-4 border-l-8 border-[#0F4C81]">
+                        <div class="col-8">
+                            <p :class="checkColorTextTitle(event)" class="text-[14px] text-[#0F4C81] font-bold">
+                                {{ event.title }}</p>
+                            <p :class="checkColorTextTime(event)" class="text-[12px] mt-1">{{ event.start_time }} -
+                                {{ event.end_time }} {{ event.timezone }}</p>
+                            <div v-if="event.type == 'appointment'" class="flex mt-1">
+                                <img class="w-[20px] h-[20px] rounded-full mr-1" :src="event.client.avatar">
+                                <div :class="checkColorTextTime(event)" class="text-[12px]">
+                                    <button @click="handleClientProfileClick(event)" class="underline">View Client Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="event.type == 'appointment'" class="col-4">
+                            <div :class="event.status == 'important' ? 'bg-[#5684AE]' : 'bg-[#FFFACD]'"
+                                 class="px-2 py-1 rounded-full ">
+                                <i class="fa-solid fa-video"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -78,8 +106,9 @@
                  :title="eventInfoClientProfile.title" :footer="null" width="350px">
             <p>
                 <b class="underline">Client Profile: </b><br><br>
-                <b class="font-medium">- Avatar: <img class="w-[75px] h-[80px] inline-block ml-2"
-                                                      :src="eventInfoClientProfile.client.avatar"></b><br><br>
+                <b class="font-medium">- Avatar:
+                    <img class="w-[75px] h-[80px] inline-block ml-2" :src="eventInfoClientProfile.client.avatar">
+                </b><br><br>
                 <b class="font-medium">- Name: </b>{{ eventInfoClientProfile.client.name }}<br>
                 <b class="font-medium">- Gender: </b>{{ eventInfoClientProfile.client.gender }}<br>
                 <b class="font-medium">- Age: </b>{{ eventInfoClientProfile.client.age }}
@@ -92,7 +121,7 @@ import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import moment from 'moment';
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 
 const calendarRef = ref(null);
 const calendarRef2 = ref(null);
@@ -100,12 +129,14 @@ const openModalEventInfo = ref(false);
 const openModalClientProfile = ref(false);
 const eventInfo = ref();
 const eventInfoClientProfile = ref();
+const selectedEvents = ref([]);
+const getClickedDate = ref()
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const events = [
     {
         title: 'First session with Alex Stan',
-        date: '2024-10-26',
+        date: '2024-10-29',
         start_time: '09:00 AM',
         end_time: '09:30 AM',
         timezone: 'GTM+8',
@@ -121,7 +152,7 @@ const events = [
     },
     {
         title: 'Webinar: How to cope with trauma in professional file',
-        date: '2024-10-27',
+        date: '2024-11-01',
         start_time: '09:00 AM',
         end_time: '09:30 AM',
         timezone: 'GTM+8',
@@ -131,7 +162,7 @@ const events = [
     },
     {
         title: 'First session with Alex Stan',
-        date: '2024-10-31',
+        date: '2024-11-04',
         start_time: '09:00 AM',
         end_time: '09:30 AM',
         timezone: 'GTM+8',
@@ -147,6 +178,11 @@ const events = [
     },
 ]
 
+const dateClick = (clickedDate) => {
+    getClickedDate.value = moment(clickedDate.date).format('YYYY-MM-DD');
+    selectedEvents.value = events.filter(event => event.date === getClickedDate.value);
+}
+
 const calendarOptionsLeft = {
     plugins: [dayGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
@@ -155,7 +191,10 @@ const calendarOptionsLeft = {
         center: 'prev,title,next',
         end: ''
     },
-    height: 520
+    events: events,
+    eventClassNames: 'check-bg-event',
+    height: 520,
+    dateClick: dateClick
 }
 
 const handleEventClick = (event) => {
@@ -304,6 +343,15 @@ const checkColorTextTime = (event) => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.check-bg-event {
+    pointer-events: none;
+    background-color: #AFEEEE;
+    border: none;
+}
+.check-bg-event .fc-event-title {
+    visibility: hidden;
 }
 
 .fc-daygrid-day-top {
